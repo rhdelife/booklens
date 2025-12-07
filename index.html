@@ -10,10 +10,10 @@
 
 <body>
   <div id="root"></div>
-  <!-- 카카오맵 API - body 끝에 배치하여 더 안정적으로 로드 -->
-  <!-- Kakao Map API 키는 동적으로 로드됩니다 -->
-  <script id="kakao-map-script"></script>
   <script type="module" src="/src/main.jsx"></script>
+  <!-- 카카오맵 SDK - body 끝에 배치, autoload=false -->
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=b4e67ac30b64b8dfb594b15954ea40bb&libraries=services&autoload=false"></script>
 </body>
 
 </html>

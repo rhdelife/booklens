@@ -69,6 +69,37 @@ npm run dev
 - 무료 할당량: Google Books API는 일일 1,000회 요청까지 무료입니다.
 - API 키가 작동하지 않으면 프로젝트가 선택되어 있는지, Books API가 활성화되어 있는지 확인하세요.
 
+### Kakao Map API 키 설정
+
+#### 1단계: Kakao Developers 콘솔 접속
+1. [Kakao Developers](https://developers.kakao.com)에 접속합니다.
+2. 카카오 계정으로 로그인합니다.
+
+#### 2단계: 애플리케이션 생성
+1. "내 애플리케이션" > "애플리케이션 추가하기" 클릭
+2. 앱 이름 입력 후 저장
+
+#### 3단계: JavaScript 키 확인
+1. 생성한 애플리케이션 선택
+2. "앱 키" 메뉴에서 **JavaScript 키** 복사
+
+#### 4단계: 플랫폼 설정
+1. "플랫폼" 메뉴 클릭
+2. "Web 플랫폼 등록" 클릭
+3. 사이트 도메인 등록:
+   - 로컬 개발: `http://localhost:5173`
+   - Vercel 배포: `https://your-project.vercel.app`
+   - 커스텀 도메인: `https://yourdomain.com`
+
+#### 5단계: API 키 설정
+1. `index.html` 파일에서 `YOUR_KAKAO_JAVASCRIPT_KEY`를 발급받은 JavaScript 키로 교체
+2. 또는 Vercel 환경 변수 `VITE_KaKaoMap`에 설정 (동적 로드 방식 사용 시)
+
+**중요:**
+- **JavaScript 키**를 사용해야 합니다 (REST API 키가 아닙니다)
+- 플랫폼 도메인을 반드시 등록해야 합니다
+- 도메인 미등록 시 404 에러가 발생합니다
+
 ## 실행 방법
 
 ```bash
