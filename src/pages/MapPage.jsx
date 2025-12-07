@@ -100,31 +100,50 @@ const MapPage = () => {
 
   // Initialize map - 간단하고 확실한 방법
   useEffect(() => {
+    let retryCount = 0
+    const maxRetries = 50 // 5초 동안 시도 (100ms * 50)
+
     const initMap = () => {
       const container = mapRef.current
       if (!container) {
         console.error('❌ Map container not found')
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(initMap, 100)
+        }
         return
       }
 
       // 카카오맵 API가 로드되었는지 확인
       if (!window.kakao || !window.kakao.maps) {
-        console.log('⏳ Waiting for Kakao Map API...')
-        setTimeout(initMap, 100)
+        console.log('⏳ Waiting for Kakao Map API...', retryCount)
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(initMap, 100)
+        } else {
+          console.error('❌ Kakao Map API failed to load after', maxRetries, 'attempts')
+          setIsMapLoaded(false)
+        }
         return
       }
 
       // LatLng 생성자가 준비되었는지 확인
       if (typeof window.kakao.maps.LatLng !== 'function') {
         console.log('⏳ Waiting for LatLng constructor...')
-        setTimeout(initMap, 100)
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(initMap, 100)
+        }
         return
       }
 
       // Map 생성자가 준비되었는지 확인
       if (typeof window.kakao.maps.Map !== 'function') {
         console.log('⏳ Waiting for Map constructor...')
-        setTimeout(initMap, 100)
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(initMap, 100)
+        }
         return
       }
 
@@ -168,6 +187,7 @@ const MapPage = () => {
       } catch (error) {
         console.error('❌ Error creating map:', error)
         console.error('Error details:', error.message)
+        console.error('Error stack:', error.stack)
         setIsMapLoaded(false)
       }
     }
@@ -415,8 +435,8 @@ const MapPage = () => {
                   <div className="text-center py-4">
                     <p className="text-gray-500 text-sm mb-2">책 제목 또는 저자를 입력하세요</p>
                     <p className="text-xs text-gray-400">Google Books API를 통해 검색됩니다</p>
-                    {!import.meta.env.VITE_GOOGLE_BOOKS_API_KEY && (
-                      <p className="text-xs text-red-500 mt-2">⚠️ API 키가 설정되지 않았습니다. .env 파일에 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.</p>
+                    {!import.meta.env.VITE_Googlebooks && !import.meta.env.VITE_GOOGLE_BOOKS_API_KEY && (
+                      <p className="text-xs text-red-500 mt-2">⚠️ API 키가 설정되지 않았습니다. 환경 변수에 VITE_Googlebooks를 설정해주세요.</p>
                     )}
                   </div>
                 ) : filteredBooks.length === 0 ? (

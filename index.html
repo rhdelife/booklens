@@ -11,11 +11,8 @@
 <body>
   <div id="root"></div>
   <!-- 카카오맵 API - body 끝에 배치하여 더 안정적으로 로드 -->
-  <script type="text/javascript"
-    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=33f577be97a1a3de92c74a389a022fe7&libraries=services"
-    onload="console.log('✅ Kakao Map SDK script onload fired'); setTimeout(function() { if(window.kakao && window.kakao.maps) { console.log('✅ window.kakao.maps is available'); } else { console.warn('⚠️ window.kakao.maps not available yet'); } }, 500);"
-    onerror="console.error('❌ Kakao Map SDK script onerror fired'); console.error('This means the script failed to load. Check Network tab.');">
-    </script>
+  <!-- Kakao Map API 키는 동적으로 로드됩니다 -->
+  <script id="kakao-map-script"></script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

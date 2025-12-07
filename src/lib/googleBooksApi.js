@@ -2,7 +2,7 @@
  * Google Books API를 사용하여 책 정보를 가져오는 함수
  */
 
-const GOOGLE_BOOKS_API_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY
+const GOOGLE_BOOKS_API_KEY = import.meta.env.VITE_Googlebooks || import.meta.env.VITE_GOOGLE_BOOKS_API_KEY
 const GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes'
 
 // API 키 확인
@@ -20,7 +20,7 @@ const hasValidApiKey = () => {
 export const searchBookByISBN = async (isbn) => {
   try {
     if (!hasValidApiKey()) {
-      throw new Error('Google Books API 키가 설정되지 않았습니다. .env 파일에 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.')
+      throw new Error('Google Books API 키가 설정되지 않았습니다. .env 파일에 VITE_Googlebooks 또는 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.')
     }
 
     // ISBN에서 하이픈 제거
@@ -76,7 +76,7 @@ export const searchBookByISBN = async (isbn) => {
 export const searchBooks = async (query) => {
   try {
     if (!hasValidApiKey()) {
-      console.warn('Google Books API 키가 설정되지 않았습니다. .env 파일에 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.')
+      console.warn('Google Books API 키가 설정되지 않았습니다. .env 파일에 VITE_Googlebooks 또는 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.')
       return []
     }
 
@@ -254,7 +254,7 @@ export const getNewReleases = async (count = 4) => {
 export const getBookById = async (bookId) => {
   try {
     if (!hasValidApiKey()) {
-      throw new Error('Google Books API 키가 설정되지 않았습니다. .env 파일에 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.')
+      throw new Error('Google Books API 키가 설정되지 않았습니다. .env 파일에 VITE_Googlebooks 또는 VITE_GOOGLE_BOOKS_API_KEY를 설정해주세요.')
     }
 
     const response = await fetch(
