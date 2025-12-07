@@ -13,7 +13,10 @@
   <script type="module" src="/src/main.jsx"></script>
   <!-- 카카오맵 SDK - body 끝에 배치, autoload=false -->
   <script
-    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=b4e67ac30b64b8dfb594b15954ea40bb&libraries=services&autoload=false"></script>
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=b4e67ac30b64b8dfb594b15954ea40bb&libraries=services&autoload=false"
+    onload="window.kakaoMapScriptLoaded = true; console.log('✅ Kakao Map SDK script loaded');"
+    onerror="console.error('❌ Failed to load Kakao Map SDK script');"
+  ></script>
 </body>
 
 </html>

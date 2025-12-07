@@ -55,19 +55,54 @@ const MapPage = () => {
   // Initialize map - window.kakao.maps.load() 콜백 안에서만 사용
   useEffect(() => {
     let retryCount = 0
-    const maxRetries = 30 // 6초 동안 시도 (200ms * 30)
+    const maxRetries = 50 // 10초 동안 시도 (200ms * 50)
     let isInitialized = false
 
     const initMap = () => {
       if (isInitialized) return
 
+      // 스크립트가 로드되었는지 확인
+      if (!window.kakaoMapScriptLoaded && retryCount < 20) {
+        if (retryCount % 5 === 0) {
+          console.log(`⏳ Waiting for script to load... (${retryCount}/20)`)
+        }
+        retryCount++
+        setTimeout(initMap, 200)
+        return
+      }
+
+      // 스크립트가 로드되지 않았으면 에러
+      if (!window.kakaoMapScriptLoaded) {
+        console.error('❌ Kakao Map SDK script not loaded')
+        console.error('Possible causes:')
+        console.error('1. API key is invalid')
+        console.error('2. Domain not registered:', window.location.origin)
+        console.error('3. Network error - check browser Network tab')
+        setIsMapLoaded(false)
+        return
+      }
+
       // SDK가 아직 로드되지 않았으면 재시도
       if (!window.kakao || !window.kakao.maps || !window.kakao.maps.load) {
         if (retryCount < maxRetries) {
+          if (retryCount % 10 === 0) {
+            console.log(`⏳ Waiting for SDK to initialize... (${retryCount}/${maxRetries})`)
+            console.log('window.kakao:', !!window.kakao)
+            console.log('window.kakao.maps:', !!window.kakao?.maps)
+            console.log('window.kakao.maps.load:', !!window.kakao?.maps?.load)
+          }
           retryCount++
           setTimeout(initMap, 200)
         } else {
-          console.error('❌ Kakao Map SDK not available')
+          console.error('❌ Kakao Map SDK not available after', maxRetries, 'attempts')
+          console.error('Script loaded:', window.kakaoMapScriptLoaded)
+          console.error('window.kakao:', window.kakao)
+          console.error('window.kakao.maps:', window.kakao?.maps)
+          console.error('Current origin:', window.location.origin)
+          console.error('Check:')
+          console.error('1. API key is correct in index.html')
+          console.error('2. Domain is registered in Kakao Developers console')
+          console.error('3. Check browser Network tab for script loading errors')
           setIsMapLoaded(false)
         }
         return
