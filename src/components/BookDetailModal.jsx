@@ -55,11 +55,11 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">책 상세 정보</h2>
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 tracking-tight">책 상세 정보</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -80,13 +80,13 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
               className="w-40 h-56 object-cover rounded-lg shadow-md"
             />
             <div className="flex-1">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{book.title}</h3>
-              <p className="text-gray-600 mb-2">작가: {book.author}</p>
-              <p className="text-gray-600 mb-4">장르: {book.genre}</p>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-2">{book.title}</h3>
+              <p className="text-gray-500 mb-2">작가: {book.author}</p>
+              <p className="text-gray-500 mb-4">장르: {book.genre}</p>
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-600">진행률</span>
-                  <span className="text-sm font-semibold text-brand-600">{progress}%</span>
+                  <span className="text-sm font-semibold text-gray-900">{progress}%</span>
                 </div>
                 <input
                   type="range"
@@ -94,13 +94,13 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
                   max="100"
                   value={progress}
                   onChange={(e) => setProgress(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                  className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-gray-900"
                 />
               </div>
               {book.status === 'reading' && (
                 <button
                   onClick={handleComplete}
-                  className="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                  className="w-full bg-gray-900 text-white py-2.5 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 text-sm"
                 >
                   완독 처리
                 </button>
@@ -110,14 +110,14 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
 
           {/* Memo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               메모
             </label>
             <textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder="이 책에 대한 메모를 작성하세요..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors min-h-[120px]"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all min-h-[120px] text-sm"
             />
           </div>
 
@@ -125,7 +125,7 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
           <div>
             <button
               onClick={() => setShowPostForm(!showPostForm)}
-              className="w-full bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors"
+              className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 text-sm"
             >
               {showPostForm ? '포스팅 취소' : '포스팅 작성'}
             </button>
@@ -133,12 +133,12 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
 
           {/* Post Form */}
           {showPostForm && (
-            <div className="border-t border-gray-200 pt-6 space-y-4">
-              <h4 className="font-semibold text-gray-900">새 포스트 작성</h4>
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm">새 포스트 작성</h4>
 
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   이미지 업로드
                 </label>
                 <div className="flex items-center gap-4">
@@ -151,7 +151,7 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
                   />
                   <label
                     htmlFor="post-image"
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors"
+                    className="px-4 py-2 bg-white text-gray-700 rounded-xl cursor-pointer hover:bg-gray-50 border border-gray-200 transition-all duration-200 text-sm"
                   >
                     이미지 선택
                   </label>
@@ -159,7 +159,7 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
                     <img
                       src={postImage}
                       alt="Preview"
-                      className="w-24 h-24 object-cover rounded-lg"
+                      className="w-24 h-24 object-cover rounded-xl"
                     />
                   )}
                 </div>
@@ -167,21 +167,21 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
 
               {/* Text */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   본문
                 </label>
                 <textarea
                   value={postText}
                   onChange={(e) => setPostText(e.target.value)}
                   placeholder="포스트 내용을 작성하세요..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors min-h-[120px]"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all min-h-[120px] text-sm"
                 />
               </div>
 
               <button
                 onClick={handlePostSubmit}
                 disabled={!postText.trim()}
-                className="w-full bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 포스트 저장
               </button>
@@ -189,16 +189,16 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4 border-t border-gray-100">
             <button
               onClick={handleSave}
-              className="flex-1 bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors"
+              className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 text-sm"
             >
               저장
             </button>
             <button
               onClick={onClose}
-              className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              className="flex-1 bg-white text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 border border-gray-200 transition-all duration-200 text-sm"
             >
               취소
             </button>
@@ -210,6 +210,12 @@ const BookDetailModal = ({ book, isOpen, onClose, onUpdate, onPost }) => {
 }
 
 export default BookDetailModal
+
+
+
+
+
+
 
 
 

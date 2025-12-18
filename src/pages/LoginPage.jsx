@@ -2,18 +2,60 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import TextPressure from '../components/TextPressure'
+import { validateEmail, validatePassword } from '../utils/validation'
+import { startGoogleLogin, startNaverLogin } from '../services/oauth'
 
 const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState({})
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
+  // 실시간 검증
+  const validateField = (field, value) => {
+    let validation = null
+    switch (field) {
+      case 'email':
+        validation = validateEmail(value)
+        break
+      case 'password':
+        validation = validatePassword(value, { minLength: 6 })
+        break
+      default:
+        return
+    }
+
+    if (validation && !validation.isValid) {
+      setErrors((prev) => ({ ...prev, [field]: validation.error }))
+    } else {
+      setErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setErrors({})
+
+    // 전체 폼 검증
+    const emailValidation = validateEmail(email)
+    const passwordValidation = validatePassword(password, { minLength: 6 })
+
+    if (!emailValidation.isValid || !passwordValidation.isValid) {
+      setErrors({
+        email: emailValidation.error,
+        password: passwordValidation.error,
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -27,37 +69,36 @@ const LoginPage = () => {
   }
 
   return (
-
-    <div className="min-h-screen bg-gradient-to-b from-brand-500 to-white flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className=" max-w-md w-full space-y-4 my-8 textsize-50">
-        <TextPressure
-          text="|BookLens|"
-          textColor="#FFFFFF"
-          width={true}
-          weight={true}
-          italic={true}
-          className="flex"
-          minFontSize={40}
-        />
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-4 my-8">
+        <div className="flex justify-center">
+          <TextPressure
+            text="|BookLens|"
+            textColor="#1F2937"
+            width={true}
+            weight={true}
+            italic={true}
+            className="flex"
+            minFontSize={40}
+          />
+        </div>
       </div>
-      <div className=" max-w-md w-full space-y-4">
-
+      <div className="max-w-md w-full space-y-4">
         {/* Login Card Section */}
-        <div className=" bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white rounded-2xl p-8 border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
                 {error}
               </div>
             )}
 
-            <div className="flex flex-col items-center justify-center mb-4">
-
-              <p className="text-gray-600 text-lg font-light mt-2">계정에 로그인하세요</p>
+            <div className="flex flex-col items-center justify-center mb-6">
+              <p className="text-gray-600 text-[15px] font-normal">계정에 로그인하세요</p>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
                 이메일
               </label>
               <input
@@ -67,14 +108,23 @@ const LoginPage = () => {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors text-gray-900 placeholder:text-gray-400"
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  validateField('email', e.target.value)
+                }}
+                onBlur={(e) => validateField('email', e.target.value)}
+                className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900 placeholder:text-gray-400 text-sm ${
+                  errors.email ? 'border-red-300' : 'border-gray-200'
+                }`}
                 placeholder="example@email.com"
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">
                 비밀번호
               </label>
               <input
@@ -84,10 +134,19 @@ const LoginPage = () => {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors text-gray-900 placeholder:text-gray-400"
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  validateField('password', e.target.value)
+                }}
+                onBlur={(e) => validateField('password', e.target.value)}
+                className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900 placeholder:text-gray-400 text-sm ${
+                  errors.password ? 'border-red-300' : 'border-gray-200'
+                }`}
                 placeholder="비밀번호를 입력하세요"
               />
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -96,15 +155,15 @@ const LoginPage = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
                   로그인 상태 유지
                 </label>
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-brand-600 hover:text-brand-500">
+                <a href="#" className="font-normal text-gray-600 hover:text-gray-900 transition-colors">
                   비밀번호 찾기
                 </a>
               </div>
@@ -113,7 +172,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {loading ? '로그인 중...' : '로그인'}
             </button>
@@ -122,17 +181,18 @@ const LoginPage = () => {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-100"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">또는</span>
+                <span className="px-2 bg-white text-gray-400">또는</span>
               </div>
             </div>
 
             <div className="mt-6 space-y-3">
               <button
                 type="button"
-                className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={startGoogleLogin}
+                className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 text-sm"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                   <path
@@ -157,7 +217,8 @@ const LoginPage = () => {
 
               <button
                 type="button"
-                className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={startNaverLogin}
+                className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 text-sm"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="#03C75A">
                   <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845Z" />
@@ -168,9 +229,9 @@ const LoginPage = () => {
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-500">
               계정이 없으신가요?{' '}
-              <Link to="/signup" className="font-medium text-brand-600 hover:text-brand-500">
+              <Link to="/signup" className="font-medium text-gray-900 hover:text-gray-700 transition-colors">
                 회원가입
               </Link>
             </p>

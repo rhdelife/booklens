@@ -27,80 +27,81 @@ const Navbar = () => {
           font-weight: 300;
         }
       `}</style>
-      <nav className=" sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-black/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className=" flex justify-between items-center h-16">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              <h1 className="text-[40px] logo-compressa font-extrabold text-brand-600">BookLens</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">BookLens</h1>
             </Link>
 
             {/* Navigation Menu */}
-            <div className="relative flex items-center space-x-12">
+            <div className="hidden md:flex items-center space-x-8">
               <Link
                 to="/"
-                className="text-[20px] text-gray-700 hover:text-brand-600 transition-colors font-medium"
+                className="text-[15px] text-gray-600 hover:text-gray-900 transition-colors font-normal"
               >
                 Home
               </Link>
               <Link
                 to="/mylibrary"
-                className="text-[20px] text-gray-700 hover:text-brand-600 transition-colors font-medium"
+                className="text-[15px] text-gray-600 hover:text-gray-900 transition-colors font-normal"
               >
-                MyLibrary
+                Library
               </Link>
               <Link
                 to="/community"
-                className="text-[20px] text-gray-700 hover:text-brand-600 transition-colors font-medium"
+                className="text-[15px] text-gray-600 hover:text-gray-900 transition-colors font-normal"
               >
                 Community
               </Link>
               <Link
                 to="/gallery"
-                className="text-[20px] text-gray-700 hover:text-brand-600 transition-colors font-medium"
+                className="text-[15px] text-gray-600 hover:text-gray-900 transition-colors font-normal"
               >
                 Gallery
               </Link>
               <Link
                 to="/map"
-                className="text-[20px] text-gray-700 hover:text-brand-600 transition-colors font-medium"
+                className="text-[15px] text-gray-600 hover:text-gray-900 transition-colors font-normal"
               >
                 Map
               </Link>
             </div>
 
             {/* User Profile / Login */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {isAuthenticated ? (
                 <>
                   <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <img
-                        src="/midoriya.jpg"
-                        alt="Profile"
-                        onClick={() => setShowProfileModal(true)}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-brand-200 hover:border-brand-400 transition-colors cursor-pointer"
-                      />
-                    </div>
+                    <img
+                      src={user?.profile_image_url || '/midoriya.jpg'}
+                      alt="Profile"
+                      onClick={() => setShowProfileModal(true)}
+                      className="w-9 h-9 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity border-2 border-gray-200"
+                      onError={(e) => {
+                        e.target.src = '/midoriya.jpg'
+                      }}
+                    />
                     <div className="hidden sm:block">
-                      <span className="text-gray-700 text-sm font-medium">
-                        {user?.name || user?.email}
+                      <span className="text-gray-700 text-sm font-normal">
+                        {user?.nickname || user?.name || user?.email}
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-900 text-sm font-normal transition-colors"
                   >
-                    로그아웃
+                    Logout
                   </button>
                 </>
               ) : (
                 <Link
                   to="/login"
-                  className="bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 transition-colors font-medium"
+                  className="bg-gray-900 text-white px-5 py-2.5 rounded-xl hover:bg-gray-800 transition-all duration-200 text-sm font-medium"
                 >
-                  로그인
+                  Sign In
                 </Link>
               )}
             </div>

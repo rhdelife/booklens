@@ -13,7 +13,75 @@ const hasValidApiKey = () => {
 }
 
 /**
- * ISBN으로 책 정보 검색
+ * 한국어 책 필터링 함수
+ * 한국어로 제공되는 문학/비문학 서적만 허용
+ */
+const filterKoreanBooks = (book) => {
+  const volumeInfo = book.volumeInfo || {}
+  
+  // 1. 언어 필터: 한국어만 허용
+  const language = volumeInfo.language || ''
+  if (language !== 'ko' && language !== 'ko-KR') {
+    return false
+  }
+  
+  // 2. 인쇄 타입 필터: 책만 허용 (잡지, 논문 제외)
+  const printType = book.saleInfo?.printType || volumeInfo.printType || 'BOOK'
+  if (printType !== 'BOOK') {
+    return false
+  }
+  
+  // 3. 카테고리 필터: 잡지, 논문, 학술지 제외
+  const categories = volumeInfo.categories || []
+  const excludedCategories = [
+    'magazine', 'journal', 'periodical', 'newspaper', 'academic',
+    'thesis', 'dissertation', 'research', 'paper', '잡지', '학술지',
+    '논문', '연구', '보고서', 'report', 'proceedings'
+  ]
+  
+  const hasExcludedCategory = categories.some(cat => {
+    const lowerCat = cat.toLowerCase()
+    return excludedCategories.some(excluded => lowerCat.includes(excluded))
+  })
+  
+  if (hasExcludedCategory) {
+    return false
+  }
+  
+  // 4. 제목/저자에 한국어 문자가 있는지 확인 (선택적 필터)
+  const title = volumeInfo.title || ''
+  const authors = volumeInfo.authors || []
+  const hasKoreanChar = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) || 
+                       authors.some(author => /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(author))
+  
+  // 한국어 문자가 없어도 언어가 ko면 허용 (번역서 포함)
+  
+  // 5. 필수 정보 확인
+  if (!title || !volumeInfo.imageLinks) {
+    return false
+  }
+  
+  return true
+}
+
+/**
+ * 한국어 검색어로 책 검색 (기본 필터 적용)
+ */
+const buildSearchQuery = (baseQuery, additionalFilters = {}) => {
+  // 한국어 책 검색을 위한 기본 파라미터
+  const params = new URLSearchParams({
+    q: baseQuery,
+    langRestrict: 'ko', // 한국어로 제한
+    printType: 'books', // 책만 (잡지, 논문 제외)
+    maxResults: additionalFilters.maxResults || 10,
+    ...additionalFilters
+  })
+  
+  return params.toString()
+}
+
+/**
+ * ISBN으로 책 정보 검색 (한국어 책 우선, 필터링 적용)
  * @param {string} isbn - ISBN 번호 (하이픈 포함/미포함 모두 가능)
  * @returns {Promise<Object>} 책 정보 객체
  */
@@ -27,7 +95,7 @@ export const searchBookByISBN = async (isbn) => {
     const cleanISBN = isbn.replace(/-/g, '')
 
     const response = await fetch(
-      `${GOOGLE_BOOKS_API_URL}?q=isbn:${cleanISBN}&key=${GOOGLE_BOOKS_API_KEY}`
+      `${GOOGLE_BOOKS_API_URL}?q=isbn:${cleanISBN}&langRestrict=ko&printType=books&key=${GOOGLE_BOOKS_API_KEY}`
     )
 
     if (!response.ok) {
@@ -40,14 +108,22 @@ export const searchBookByISBN = async (isbn) => {
       throw new Error('해당 ISBN의 책을 찾을 수 없습니다.')
     }
 
-    const book = data.items[0].volumeInfo
+    // 한국어 책 필터링된 결과 찾기
+    let bookItem = data.items.find(item => filterKoreanBooks(item))
+    
+    // 필터링된 결과가 없으면 첫 번째 결과 사용 (사용자가 직접 입력한 ISBN이므로)
+    if (!bookItem) {
+      bookItem = data.items[0]
+    }
+
+    const book = bookItem.volumeInfo
 
     // 책 정보 파싱
     const bookInfo = {
       title: book.title || '',
       subtitle: book.subtitle || '',
       authors: book.authors || [],
-      author: book.authors ? book.authors.join(', ') : '',
+      author: book.authors ? book.authors.join(', ') : '저자 미상',
       publisher: book.publisher || '',
       publishedDate: book.publishedDate || '',
       description: book.description || '',
@@ -69,7 +145,7 @@ export const searchBookByISBN = async (isbn) => {
 }
 
 /**
- * 제목으로 책 검색
+ * 제목으로 책 검색 (한국어 문학/비문학 서적만)
  * @param {string} query - 검색어 (제목, 저자 등)
  * @returns {Promise<Array>} 책 정보 배열
  */
@@ -80,8 +156,9 @@ export const searchBooks = async (query) => {
       return []
     }
 
+    const queryString = buildSearchQuery(query, { maxResults: 10 })
     const response = await fetch(
-      `${GOOGLE_BOOKS_API_URL}?q=${encodeURIComponent(query)}&key=${GOOGLE_BOOKS_API_KEY}&maxResults=10`
+      `${GOOGLE_BOOKS_API_URL}?${queryString}&key=${GOOGLE_BOOKS_API_KEY}`
     )
 
     if (!response.ok) {
@@ -94,27 +171,30 @@ export const searchBooks = async (query) => {
       return []
     }
 
-    return data.items.map(item => {
-      const book = item.volumeInfo
-      return {
-        id: item.id || Date.now() + Math.random(), // Google Books API의 책 ID 추가
-        title: book.title || '',
-        subtitle: book.subtitle || '',
-        authors: book.authors || [],
-        author: book.authors ? book.authors.join(', ') : '',
-        publisher: book.publisher || '',
-        publishedDate: book.publishedDate || '',
-        description: book.description || '',
-        pageCount: book.pageCount || 0,
-        categories: book.categories || [],
-        thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
-        isbn10: book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
-        isbn13: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
-        language: book.language || '',
-        previewLink: book.previewLink || '',
-        infoLink: book.infoLink || '',
-      }
-    })
+    // 한국어 책만 필터링
+    return data.items
+      .filter(item => filterKoreanBooks(item))
+      .map(item => {
+        const book = item.volumeInfo
+        return {
+          id: item.id || Date.now() + Math.random(),
+          title: book.title || '',
+          subtitle: book.subtitle || '',
+          authors: book.authors || [],
+          author: book.authors ? book.authors.join(', ') : '저자 미상',
+          publisher: book.publisher || '',
+          publishedDate: book.publishedDate || '',
+          description: book.description || '',
+          pageCount: book.pageCount || 0,
+          categories: book.categories || [],
+          thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
+          isbn10: book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
+          isbn13: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
+          language: book.language || '',
+          previewLink: book.previewLink || '',
+          infoLink: book.infoLink || '',
+        }
+      })
   } catch (error) {
     console.error('Google Books API 오류:', error)
     throw error
@@ -122,7 +202,7 @@ export const searchBooks = async (query) => {
 }
 
 /**
- * 베스트셀러 책 가져오기
+ * 베스트셀러 책 가져오기 (한국어 문학/비문학 서적만)
  * @param {number} count - 가져올 책의 개수 (기본값: 6)
  * @returns {Promise<Array>} 책 정보 배열
  */
@@ -133,25 +213,42 @@ export const getBestsellers = async (count = 6) => {
       return []
     }
 
-    const searchTerms = ['bestseller', 'popular', 'best seller', 'award winner']
+    // 한국 베스트셀러 관련 검색어
+    const searchTerms = [
+      '베스트셀러',
+      '한국소설',
+      '한국문학',
+      '한국도서',
+      '인기도서',
+      '추천도서',
+      '문학',
+      '소설',
+      '에세이',
+      '인문학',
+      '경제경영',
+      '자기계발'
+    ]
+    
     const allBooks = []
 
     for (const term of searchTerms) {
       try {
+        const queryString = buildSearchQuery(term, { maxResults: 10, orderBy: 'relevance' })
         const response = await fetch(
-          `${GOOGLE_BOOKS_API_URL}?q=${encodeURIComponent(term)}&key=${GOOGLE_BOOKS_API_KEY}&maxResults=10&orderBy=relevance`
+          `${GOOGLE_BOOKS_API_URL}?${queryString}&key=${GOOGLE_BOOKS_API_KEY}`
         )
 
         if (response.ok) {
           const data = await response.json()
           if (data.items) {
             data.items.forEach(item => {
-              const book = item.volumeInfo
-              if (book.imageLinks && book.title) {
+              // 한국어 책 필터링
+              if (filterKoreanBooks(item)) {
+                const book = item.volumeInfo
                 allBooks.push({
                   id: item.id || Date.now() + Math.random(),
                   title: book.title || '',
-                  author: book.authors ? book.authors.join(', ') : 'Unknown Author',
+                  author: book.authors ? book.authors.join(', ') : '저자 미상',
                   thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
                   cover: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
                 })
@@ -177,7 +274,7 @@ export const getBestsellers = async (count = 6) => {
 }
 
 /**
- * 신간 도서 가져오기
+ * 신간 도서 가져오기 (한국어 문학/비문학 서적만)
  * @param {number} count - 가져올 책의 개수 (기본값: 4)
  * @returns {Promise<Array>} 책 정보 배열
  */
@@ -189,33 +286,40 @@ export const getNewReleases = async (count = 4) => {
     }
 
     const currentYear = new Date().getFullYear()
+    // 한국 신간 도서 검색어
     const searchTerms = [
-      `${currentYear}`,
-      `${currentYear - 1}`,
-      'new release',
-      'recent publication'
+      `${currentYear} 신간`,
+      `${currentYear - 1} 신간`,
+      '신간도서',
+      '신간소설',
+      '신간문학',
+      '최신도서',
+      '새책'
     ]
 
     const allBooks = []
 
     for (const term of searchTerms) {
       try {
+        const queryString = buildSearchQuery(term, { maxResults: 10, orderBy: 'newest' })
         const response = await fetch(
-          `${GOOGLE_BOOKS_API_URL}?q=${encodeURIComponent(term)}&key=${GOOGLE_BOOKS_API_KEY}&maxResults=10&orderBy=newest`
+          `${GOOGLE_BOOKS_API_URL}?${queryString}&key=${GOOGLE_BOOKS_API_KEY}`
         )
 
         if (response.ok) {
           const data = await response.json()
           if (data.items) {
             data.items.forEach(item => {
-              const book = item.volumeInfo
-              if (book.imageLinks && book.title) {
+              // 한국어 책 필터링
+              if (filterKoreanBooks(item)) {
+                const book = item.volumeInfo
                 const publishedYear = book.publishedDate ? new Date(book.publishedDate).getFullYear() : null
+                // 최근 2년 이내 출간된 책만
                 if (publishedYear && publishedYear >= currentYear - 2) {
                   allBooks.push({
                     id: item.id || Date.now() + Math.random(),
                     title: book.title || '',
-                    author: book.authors ? book.authors.join(', ') : 'Unknown Author',
+                    author: book.authors ? book.authors.join(', ') : '저자 미상',
                     thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
                     cover: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
                     publishedDate: book.publishedDate || '',
@@ -301,7 +405,7 @@ export const getBookById = async (bookId) => {
 }
 
 /**
- * 무작위 책 목록 가져오기
+ * 무작위 책 목록 가져오기 (한국어 문학/비문학 서적만)
  * @param {number} count - 가져올 책의 개수 (기본값: 40)
  * @returns {Promise<Array>} 책 정보 배열
  */
@@ -312,19 +416,35 @@ export const getRandomBooks = async (count = 40) => {
       return []
     }
 
-    // 다양한 검색어로 무작위 책 가져오기
+    // 한국 문학/비문학 관련 검색어
     const searchTerms = [
-      'fiction', 'novel', 'literature', 'science', 'history', 'philosophy',
-      'biography', 'poetry', 'drama', 'mystery', 'romance', 'fantasy',
-      'science fiction', 'thriller', 'horror', 'adventure', 'classic',
-      'best seller', 'award winner', 'bestseller', 'popular', 'trending'
+      '한국소설',
+      '한국문학',
+      '한국에세이',
+      '한국시',
+      '한국인문학',
+      '한국경제',
+      '한국역사',
+      '한국철학',
+      '한국자기계발',
+      '한국경영',
+      '문학',
+      '소설',
+      '에세이',
+      '시집',
+      '인문학',
+      '경제경영',
+      '자기계발',
+      '역사',
+      '철학'
     ]
 
     // 여러 검색어로 병렬 검색
     const searchPromises = searchTerms.slice(0, Math.ceil(count / 10)).map(async (term, index) => {
       try {
+        const queryString = buildSearchQuery(term, { maxResults: 10 })
         const response = await fetch(
-          `${GOOGLE_BOOKS_API_URL}?q=${encodeURIComponent(term)}&key=${GOOGLE_BOOKS_API_KEY}&maxResults=10&startIndex=${index * 10}`
+          `${GOOGLE_BOOKS_API_URL}?${queryString}&startIndex=${index * 10}&key=${GOOGLE_BOOKS_API_KEY}`
         )
 
         if (!response.ok) {
@@ -336,35 +456,38 @@ export const getRandomBooks = async (count = 40) => {
           return []
         }
 
-        return data.items.map(item => {
-          const book = item.volumeInfo
-          return {
-            id: item.id || Date.now() + Math.random(),
-            title: book.title || '',
-            subtitle: book.subtitle || '',
-            authors: book.authors || [],
-            author: book.authors ? book.authors.join(', ') : 'Unknown Author',
-            publisher: book.publisher || '',
-            publishDate: book.publishedDate || '',
-            description: book.description || '',
-            pageCount: book.pageCount || 0,
-            pages: book.pageCount || 0,
-            categories: book.categories || [],
-            genre: book.categories?.[0] || '',
-            thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
-            isbn10: book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
-            isbn13: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
-            isbn: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier ||
-              book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
-            language: book.language || '',
-            previewLink: book.previewLink || '',
-            infoLink: book.infoLink || '',
-            year: book.publishedDate ? new Date(book.publishedDate).getFullYear() : null,
-            isRead: Math.random() > 0.5, // 랜덤으로 읽음/안읽음 설정
-            isReading: false,
-            series: null,
-          }
-        }).filter(book => book.thumbnail && book.title) // 표지와 제목이 있는 책만
+        return data.items
+          .filter(item => filterKoreanBooks(item)) // 한국어 책 필터링
+          .map(item => {
+            const book = item.volumeInfo
+            return {
+              id: item.id || Date.now() + Math.random(),
+              title: book.title || '',
+              subtitle: book.subtitle || '',
+              authors: book.authors || [],
+              author: book.authors ? book.authors.join(', ') : '저자 미상',
+              publisher: book.publisher || '',
+              publishDate: book.publishedDate || '',
+              description: book.description || '',
+              pageCount: book.pageCount || 0,
+              pages: book.pageCount || 0,
+              categories: book.categories || [],
+              genre: book.categories?.[0] || '',
+              thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
+              isbn10: book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
+              isbn13: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
+              isbn: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier ||
+                book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
+              language: book.language || '',
+              previewLink: book.previewLink || '',
+              infoLink: book.infoLink || '',
+              year: book.publishedDate ? new Date(book.publishedDate).getFullYear() : null,
+              isRead: Math.random() > 0.5,
+              isReading: false,
+              series: null,
+            }
+          })
+          .filter(book => book.thumbnail && book.title) // 표지와 제목이 있는 책만
       } catch (error) {
         console.error(`검색어 "${term}" 오류:`, error)
         return []
@@ -391,7 +514,7 @@ export const getRandomBooks = async (count = 40) => {
 }
 
 /**
- * 특정 출판사의 책 목록 가져오기
+ * 특정 출판사의 책 목록 가져오기 (한국어 문학/비문학 서적만)
  * @param {Array<string>} publishers - 출판사 이름 배열
  * @param {number} count - 가져올 책의 개수 (기본값: 40)
  * @returns {Promise<Array>} 책 정보 배열
@@ -416,8 +539,12 @@ export const getBooksByPublishers = async (publishers = [], count = 40) => {
         const maxPages = Math.ceil(count / publishers.length / 10)
 
         for (let page = 0; page < maxPages; page++) {
+          const queryString = buildSearchQuery(
+            `inpublisher:${publisher}`,
+            { maxResults: 10 }
+          )
           const response = await fetch(
-            `${GOOGLE_BOOKS_API_URL}?q=inpublisher:${encodeURIComponent(publisher)}&key=${GOOGLE_BOOKS_API_KEY}&maxResults=10&startIndex=${page * 10}`
+            `${GOOGLE_BOOKS_API_URL}?${queryString}&startIndex=${page * 10}&key=${GOOGLE_BOOKS_API_KEY}`
           )
 
           if (!response.ok) {
@@ -430,45 +557,48 @@ export const getBooksByPublishers = async (publishers = [], count = 40) => {
             break // 더 이상 결과가 없으면 다음 출판사로
           }
 
-          const books = data.items.map(item => {
-            const book = item.volumeInfo
-            // 출판사 이름이 정확히 일치하는지 확인
-            const bookPublisher = book.publisher || ''
-            const isMatch = publishers.some(p =>
-              bookPublisher.includes(p) || p.includes(bookPublisher)
-            )
+          const books = data.items
+            .filter(item => filterKoreanBooks(item)) // 한국어 책 필터링
+            .map(item => {
+              const book = item.volumeInfo
+              // 출판사 이름이 정확히 일치하는지 확인
+              const bookPublisher = book.publisher || ''
+              const isMatch = publishers.some(p =>
+                bookPublisher.includes(p) || p.includes(bookPublisher)
+              )
 
-            if (!isMatch) {
-              return null
-            }
+              if (!isMatch) {
+                return null
+              }
 
-            return {
-              id: item.id || Date.now() + Math.random(),
-              title: book.title || '',
-              subtitle: book.subtitle || '',
-              authors: book.authors || [],
-              author: book.authors ? book.authors.join(', ') : 'Unknown Author',
-              publisher: book.publisher || '',
-              publishDate: book.publishedDate || '',
-              description: book.description || '',
-              pageCount: book.pageCount || 0,
-              pages: book.pageCount || 0,
-              categories: book.categories || [],
-              genre: book.categories?.[0] || '',
-              thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
-              isbn10: book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
-              isbn13: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
-              isbn: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier ||
-                book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
-              language: book.language || '',
-              previewLink: book.previewLink || '',
-              infoLink: book.infoLink || '',
-              year: book.publishedDate ? new Date(book.publishedDate).getFullYear() : null,
-              isRead: Math.random() > 0.5,
-              isReading: false,
-              series: null,
-            }
-          }).filter(book => book && book.thumbnail && book.title) // null 제거 및 표지/제목 필수
+              return {
+                id: item.id || Date.now() + Math.random(),
+                title: book.title || '',
+                subtitle: book.subtitle || '',
+                authors: book.authors || [],
+                author: book.authors ? book.authors.join(', ') : '저자 미상',
+                publisher: book.publisher || '',
+                publishDate: book.publishedDate || '',
+                description: book.description || '',
+                pageCount: book.pageCount || 0,
+                pages: book.pageCount || 0,
+                categories: book.categories || [],
+                genre: book.categories?.[0] || '',
+                thumbnail: book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '',
+                isbn10: book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
+                isbn13: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
+                isbn: book.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier ||
+                  book.industryIdentifiers?.find(id => id.type === 'ISBN_10')?.identifier || '',
+                language: book.language || '',
+                previewLink: book.previewLink || '',
+                infoLink: book.infoLink || '',
+                year: book.publishedDate ? new Date(book.publishedDate).getFullYear() : null,
+                isRead: Math.random() > 0.5,
+                isReading: false,
+                series: null,
+              }
+            })
+            .filter(book => book && book.thumbnail && book.title) // null 제거 및 표지/제목 필수
 
           allBooks.push(...books)
 

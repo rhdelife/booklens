@@ -44,11 +44,11 @@ const BookDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="min-h-screen bg-[#FAFAFA]">
+        <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-500 mb-4"></div>
-            <p className="text-gray-600">책 정보를 불러오는 중...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900 mb-4"></div>
+            <p className="text-gray-500 text-sm">책 정보를 불러오는 중...</p>
           </div>
         </div>
       </div>
@@ -57,16 +57,16 @@ const BookDetailPage = () => {
 
   if (error || !book) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="min-h-screen bg-[#FAFAFA]">
+        <div className="max-w-6xl mx-auto px-6 py-12">
           <button
             onClick={() => navigate(-1)}
-            className="mb-6 text-brand-600 hover:text-brand-700 font-medium flex items-center gap-2"
+            className="mb-6 text-gray-500 hover:text-gray-900 font-medium flex items-center gap-2 transition-colors text-sm"
           >
             ← 뒤로
           </button>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-            <p className="text-red-800">{error || '책 정보를 찾을 수 없습니다.'}</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+            <p className="text-red-800 text-sm">{error || '책 정보를 찾을 수 없습니다.'}</p>
           </div>
         </div>
       </div>
@@ -74,17 +74,17 @@ const BookDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="max-w-6xl mx-auto px-6 py-12">
         <button
           onClick={() => navigate(-1)}
-          className="mb-6 text-brand-600 hover:text-brand-700 font-medium flex items-center gap-2"
+          className="mb-6 text-gray-500 hover:text-gray-900 font-medium flex items-center gap-2 transition-colors text-sm"
         >
           ← 뒤로
         </button>
 
         {/* Book Header Section */}
-        <div className="bg-white rounded-xl p-8 shadow-md border border-gray-100 mb-8">
+        <div className="bg-white rounded-2xl p-8 border border-gray-100 mb-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Book Cover */}
             <div className="flex-shrink-0">
@@ -110,7 +110,7 @@ const BookDetailPage = () => {
               {book.subtitle && (
                 <h2 className="text-xl text-gray-600 mb-4">{book.subtitle}</h2>
               )}
-              
+
               <div className="mb-6">
                 <p className="text-lg text-gray-700 mb-1">
                   저자 {book.author} {book.publisher && `| 출판사 ${book.publisher}`}
@@ -126,9 +126,8 @@ const BookDetailPage = () => {
                       {[1, 2, 3, 4, 5].map((star) => (
                         <span
                           key={star}
-                          className={`text-lg ${
-                            star <= Math.round(book.averageRating) ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
+                          className={`text-lg ${star <= Math.round(book.averageRating) ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
                         >
                           ★
                         </span>
@@ -175,11 +174,10 @@ const BookDetailPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab.id
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
                       ? 'border-brand-500 text-brand-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>

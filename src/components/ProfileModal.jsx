@@ -1,7 +1,35 @@
 import React, { useEffect, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { authAPI } from '../services/api'
+
+const ALIAS_OPTIONS = [
+  '독서 초보',
+  '독서가',
+  '책 애호가',
+  '열정적인 독서러',
+  '책 덕후',
+  '페이지 마스터',
+  '시간의 지배자',
+  '책벌레 오타쿠',
+  '독서 마니아',
+  '킹왕짱',
+]
 
 const ProfileModal = ({ isOpen, onClose, user }) => {
+  const { user: currentUser, setUser } = useAuth()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [books, setBooks] = useState([])
+  
+  // 편집 폼 상태
+  const [formData, setFormData] = useState({
+    name: '',
+    nickname: '',
+    alias: '',
+    bio: '',
+    profileImage: null,
+    profileImagePreview: null,
+  })
 
   // localStorage에서 책 데이터 가져오기
   useEffect(() => {
@@ -17,108 +45,266 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
     }
   }, [isOpen])
 
+  // 사용자 정보 로드
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      setFormData({
+        name: currentUser.name || '',
+        nickname: currentUser.nickname || currentUser.name || '',
+        alias: currentUser.alias || '',
+        bio: currentUser.bio || '책을 사랑하는 사람입니다. 매일 새로운 이야기를 만나고 있어요.',
+        profileImage: null,
+        profileImagePreview: currentUser.profile_image_url || '/midoriya.jpg',
+      })
+    }
+  }, [isOpen, currentUser])
+
+  // 프로필 이미지 선택
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('이미지 크기는 5MB 이하여야 합니다.')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData({
+          ...formData,
+          profileImage: reader.result,
+          profileImagePreview: reader.result,
+        })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // 프로필 저장
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      // 프로필 이미지 업로드
+      if (formData.profileImage) {
+        await authAPI.uploadProfileImage(formData.profileImage)
+      }
+
+      // 프로필 정보 업데이트
+      const updatedUser = await authAPI.updateProfile({
+        name: formData.name,
+        nickname: formData.nickname,
+        alias: formData.alias,
+        bio: formData.bio,
+      })
+
+      // 사용자 정보 업데이트
+      sessionStorage.setItem('user', JSON.stringify(updatedUser.user))
+      setUser(updatedUser.user)
+
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+      alert('프로필 업데이트에 실패했습니다: ' + (error.message || '알 수 없는 오류'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 편집 취소
+  const handleCancel = () => {
+    if (currentUser) {
+      setFormData({
+        name: currentUser.name || '',
+        nickname: currentUser.nickname || currentUser.name || '',
+        alias: currentUser.alias || '',
+        bio: currentUser.bio || '책을 사랑하는 사람입니다. 매일 새로운 이야기를 만나고 있어요.',
+        profileImage: null,
+        profileImagePreview: currentUser.profile_image_url || '/midoriya.jpg',
+      })
+    }
+    setIsEditing(false)
+  }
+
   if (!isOpen) return null
 
-  // 독서 활동 기반 별명 계산 (재미있고 캐주얼한 별명들)
-  const calculateAlias = (books) => {
-    if (!books || books.length === 0) return '독서 초보'
-    
-    const totalBooks = books.length
-    const completedBooks = books.filter(book => book.status === 'completed').length
-    const totalReadingTime = books.reduce((sum, book) => sum + (book.totalReadingTime || 0), 0)
-    const totalPages = books.reduce((sum, book) => sum + (book.totalPage || 0), 0)
-    
-    // 별명 결정 로직 (재미있고 다양한 별명)
-    if (completedBooks >= 50) return '킹왕짱'
-    if (completedBooks >= 30) return '책벌레 오타쿠'
-    if (completedBooks >= 20) return '독서 마니아'
-    if (totalReadingTime >= 100000) return '시간의 지배자' // 약 27시간
-    if (totalPages >= 10000) return '페이지 마스터'
-    if (completedBooks >= 15) return '책 덕후'
-    if (completedBooks >= 10) return '열정적인 독서러'
-    if (completedBooks >= 5) return '책 애호가'
-    if (totalBooks >= 3) return '독서가'
-    return '독서 초보'
-  }
-
-  // 사용자 정보
-  const profileData = {
-    nickname: user?.name || '사용자',
-    alias: calculateAlias(books),
-    bio: '책을 사랑하는 사람입니다. 매일 새로운 이야기를 만나고 있어요.'
-  }
+  const displayName = currentUser?.nickname || currentUser?.name || '사용자'
+  const displayAlias = currentUser?.alias || '독서 초보'
+  const displayBio = currentUser?.bio || '책을 사랑하는 사람입니다. 매일 새로운 이야기를 만나고 있어요.'
+  const displayImage = currentUser?.profile_image_url || '/midoriya.jpg'
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl max-w-md w-full shadow-2xl mx-auto my-auto"
+        className="bg-white rounded-2xl max-w-md w-full border border-gray-100 mx-auto my-auto max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">프로필</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 bg-white z-10">
+          <h2 className="text-xl font-semibold text-gray-900 tracking-tight">프로필</h2>
+          <div className="flex items-center gap-2">
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium"
+              >
+                편집
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="p-6">
           {/* Profile Image */}
           <div className="flex justify-center mb-6">
-            <img
-              src="/midoriya.jpg"
-              alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-brand-200 shadow-lg"
-            />
+            <div className="relative">
+              <img
+                src={isEditing ? formData.profileImagePreview : displayImage}
+                alt="Profile"
+                className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
+              />
+              {isEditing && (
+                <label className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Profile Info */}
           <div className="space-y-4">
+            {/* 이름 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                이름
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900 text-sm"
+                  placeholder="이름을 입력하세요"
+                />
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <p className="text-gray-900 font-medium">{displayName}</p>
+                </div>
+              )}
+            </div>
+
+            {/* 닉네임 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 닉네임
               </label>
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-gray-900 font-medium">{profileData.nickname}</p>
-              </div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={formData.nickname}
+                  onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900 text-sm"
+                  placeholder="닉네임을 입력하세요"
+                />
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <p className="text-gray-900 font-medium">{displayName}</p>
+                </div>
+              )}
             </div>
 
+            {/* 별명 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 별명
               </label>
-              <div className="px-4 py-3 bg-gradient-to-r from-brand-100 to-brand-50 rounded-lg border-2 border-brand-300">
-                <p className="text-gray-900 font-bold text-lg text-center">{profileData.alias}</p>
-              </div>
+              {isEditing ? (
+                <select
+                  value={formData.alias}
+                  onChange={(e) => setFormData({ ...formData, alias: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900 text-sm"
+                >
+                  {ALIAS_OPTIONS.map((alias) => (
+                    <option key={alias} value={alias}>
+                      {alias}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="px-4 py-3 bg-gray-100 rounded-xl border border-gray-200">
+                  <p className="text-gray-900 font-semibold text-lg text-center">{displayAlias}</p>
+                </div>
+              )}
             </div>
 
+            {/* 한줄소개 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 한줄소개
               </label>
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[80px]">
-                <p className="text-gray-900">{profileData.bio}</p>
-              </div>
+              {isEditing ? (
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-gray-900 text-sm min-h-[80px] resize-none"
+                  placeholder="자신을 소개해주세요"
+                  maxLength={200}
+                />
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 min-h-[80px]">
+                  <p className="text-gray-700 text-sm">{displayBio}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Close Button */}
-          <div className="mt-6">
-            <button
-              onClick={onClose}
-              className="w-full bg-brand-500 text-white py-3 rounded-lg font-semibold hover:bg-brand-600 transition-colors"
-            >
-              닫기
-            </button>
+          {/* Action Buttons */}
+          <div className="mt-6 space-y-3">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? '저장 중...' : '저장하기'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200 text-sm disabled:opacity-50"
+                >
+                  취소
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={onClose}
+                className="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all duration-200 text-sm"
+              >
+                닫기
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -127,4 +313,3 @@ const ProfileModal = ({ isOpen, onClose, user }) => {
 }
 
 export default ProfileModal
-

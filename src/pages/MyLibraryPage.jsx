@@ -6,13 +6,14 @@ import ReadingEndModal from '../components/ReadingEndModal'
 import PostingConfirmModal from '../components/PostingConfirmModal'
 import Toast from '../components/Toast'
 import { searchBookByISBN, searchBooks } from '../lib/googleBooksApi'
+import { validateRequired, validateLength, validateNumberRange, validateISBN } from '../utils/validation'
 
 const MyLibraryPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [showAddForm, setShowAddForm] = useState(false)
   const [myPostingsCount, setMyPostingsCount] = useState(0)
-  
+
   // localStorage에서 초기 데이터 로드
   const loadBooksFromStorage = () => {
     try {
@@ -25,7 +26,7 @@ const MyLibraryPage = () => {
     }
     return []
   }
-  
+
   const [books, setBooks] = useState(loadBooksFromStorage)
 
   // 독서 세션 관리
@@ -42,6 +43,7 @@ const MyLibraryPage = () => {
   // 토스트 메시지
   const [toastMessage, setToastMessage] = useState('')
 
+  const [formErrors, setFormErrors] = useState({})
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -120,7 +122,7 @@ const MyLibraryPage = () => {
     if (!totalSeconds || totalSeconds === 0) return '0m'
     const hours = Math.floor(totalSeconds / 3600)
     const minutes = Math.floor((totalSeconds % 3600) / 60)
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`
     } else {
@@ -177,19 +179,32 @@ const MyLibraryPage = () => {
   const totalBooks = books.length
   const readingBooks = books.filter(book => book.status === 'reading')
   const completedBooks = books.filter(book => book.status === 'completed')
-  
+
   // 총 독서 시간 계산
   const totalReadingTime = books.reduce((sum, book) => sum + (book.totalReadingTime || 0), 0)
-  
+
   // 오늘 읽은 시간 계산 (오늘 시작한 세션만)
-  const todayReadingTime = readingSession 
-    ? getCurrentSessionTime() 
+  const todayReadingTime = readingSession
+    ? getCurrentSessionTime()
     : 0
 
   const handleAddBook = (e) => {
     e.preventDefault()
-    if (!formData.title || !formData.author) {
-      alert('책 제목과 저자를 입력해주세요.')
+    setFormErrors({})
+
+    // Validation
+    const titleValidation = validateRequired(formData.title, '책 제목')
+    const authorValidation = validateRequired(formData.author, '저자')
+    const totalPageValidation = formData.totalPage
+      ? validateNumberRange(parseInt(formData.totalPage, 10), 1, 10000, '총 페이지 수')
+      : { isValid: true, error: null }
+
+    if (!titleValidation.isValid || !authorValidation.isValid || !totalPageValidation.isValid) {
+      setFormErrors({
+        title: titleValidation.error,
+        author: authorValidation.error,
+        totalPage: totalPageValidation.error,
+      })
       return
     }
 
@@ -214,10 +229,10 @@ const MyLibraryPage = () => {
     }
 
     setBooks([...books, newBook])
-    setFormData({ 
-      title: '', 
-      author: '', 
-      memo: '', 
+    setFormData({
+      title: '',
+      author: '',
+      memo: '',
       totalPage: '',
       isbn: '',
       publisher: '',
@@ -227,6 +242,7 @@ const MyLibraryPage = () => {
     setBookSearchError('')
     setSearchQuery('')
     setSearchResults([])
+    setFormErrors({})
     setShowAddForm(false)
     setToastMessage('책이 추가되었습니다! 독서를 시작해보세요.')
     setTimeout(() => setToastMessage(''), 3000)
@@ -267,7 +283,7 @@ const MyLibraryPage = () => {
 
     // 진행률 업데이트
     const newReadPage = pagesRead
-    const newProgress = book.totalPage > 0 
+    const newProgress = book.totalPage > 0
       ? Math.min(100, Math.round((newReadPage / book.totalPage) * 100))
       : 0
 
@@ -306,8 +322,8 @@ const MyLibraryPage = () => {
           ...book,
           progress: newProgress,
           status: newStatus,
-          completedDate: newProgress === 100 && book.status !== 'completed' 
-            ? new Date().toISOString().split('T')[0] 
+          completedDate: newProgress === 100 && book.status !== 'completed'
+            ? new Date().toISOString().split('T')[0]
             : book.completedDate
         }
       }
@@ -323,8 +339,12 @@ const MyLibraryPage = () => {
 
   // ISBN으로 책 검색
   const handleSearchByISBN = async () => {
-    if (!formData.isbn.trim()) {
-      setBookSearchError('ISBN을 입력해주세요.')
+    setBookSearchError('')
+
+    // ISBN validation
+    const isbnValidation = validateISBN(formData.isbn)
+    if (!isbnValidation.isValid) {
+      setBookSearchError(isbnValidation.error)
       return
     }
 
@@ -333,7 +353,7 @@ const MyLibraryPage = () => {
 
     try {
       const bookInfo = await searchBookByISBN(formData.isbn)
-      
+
       // 폼 데이터 자동 채우기
       setFormData({
         ...formData,
@@ -416,17 +436,17 @@ const MyLibraryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Header */}
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex justify-between items-start mb-12">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">마이라이브러리</h1>
-            <p className="text-gray-600">나만의 독서 기록을 관리하고 추적하세요</p>
+            <h1 className="text-3xl font-semibold text-gray-900 mb-2 tracking-tight">마이라이브러리</h1>
+            <p className="text-gray-500 text-[15px]">나만의 독서 기록을 관리하고 추적하세요</p>
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-brand-500 text-white px-6 py-3 rounded-lg hover:bg-brand-600 transition-colors font-medium shadow-md"
+            className="bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
           >
             + 새책 추가
           </button>
@@ -434,9 +454,9 @@ const MyLibraryPage = () => {
 
         {/* Add New Book Form */}
         {showAddForm && (
-          <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">새 책 추가</h2>
-            
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 tracking-tight">새 책 추가</h2>
+
             {/* 검색 모드 선택 */}
             <div className="mb-6">
               <div className="flex gap-2 mb-4">
@@ -447,11 +467,10 @@ const MyLibraryPage = () => {
                     setSearchQuery('')
                     setSearchResults([])
                   }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    searchMode === 'isbn'
-                      ? 'bg-brand-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 text-sm ${searchMode === 'isbn'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                    }`}
                 >
                   ISBN 검색
                 </button>
@@ -462,11 +481,10 @@ const MyLibraryPage = () => {
                     setFormData({ ...formData, isbn: '' })
                     setBookSearchError('')
                   }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    searchMode === 'title'
-                      ? 'bg-brand-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 text-sm ${searchMode === 'title'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                    }`}
                 >
                   제목/저자 검색
                 </button>
@@ -487,14 +505,14 @@ const MyLibraryPage = () => {
                         setBookSearchError('')
                       }}
                       placeholder="예: 9780140449136 또는 978-0-14-044913-6"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm"
                       disabled={isLoadingBook}
                     />
                     <button
                       type="button"
                       onClick={handleSearchByISBN}
                       disabled={isLoadingBook || !formData.isbn.trim()}
-                      className="px-6 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap text-sm"
                     >
                       {isLoadingBook ? '검색 중...' : '검색'}
                     </button>
@@ -521,7 +539,7 @@ const MyLibraryPage = () => {
                     placeholder="예: 해리포터, 조지 오웰, 1984 등"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                   />
-                  
+
                   {/* 검색 결과 */}
                   {isSearching && (
                     <div className="flex justify-center items-center py-4 mt-2">
@@ -529,7 +547,7 @@ const MyLibraryPage = () => {
                       <span className="ml-2 text-sm text-gray-500">검색 중...</span>
                     </div>
                   )}
-                  
+
                   {!isSearching && searchQuery.trim() && searchResults.length > 0 && (
                     <div className="mt-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
                       {searchResults.map((book) => (
@@ -568,7 +586,7 @@ const MyLibraryPage = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   {!isSearching && searchQuery.trim() && searchResults.length === 0 && (
                     <p className="text-sm text-gray-500 mt-2 text-center py-4">
                       검색 결과가 없습니다.
@@ -599,26 +617,46 @@ const MyLibraryPage = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">책 제목 *</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">책 제목 *</label>
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, title: e.target.value })
+                      if (formErrors.title) {
+                        setFormErrors({ ...formErrors, title: null })
+                      }
+                    }}
                     placeholder="예: 아침을 여는 심리학"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm ${
+                      formErrors.title ? 'border-red-300' : 'border-gray-200'
+                    }`}
                     required
                   />
+                  {formErrors.title && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.title}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">저자 *</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">저자 *</label>
                   <input
                     type="text"
                     value={formData.author}
-                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, author: e.target.value })
+                      if (formErrors.author) {
+                        setFormErrors({ ...formErrors, author: null })
+                      }
+                    }}
                     placeholder="예: 김철수"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm ${
+                      formErrors.author ? 'border-red-300' : 'border-gray-200'
+                    }`}
                     required
                   />
+                  {formErrors.author && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.author}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -643,15 +681,25 @@ const MyLibraryPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">총 페이지 수</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">총 페이지 수</label>
                   <input
                     type="number"
                     value={formData.totalPage}
-                    onChange={(e) => setFormData({ ...formData, totalPage: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, totalPage: e.target.value })
+                      if (formErrors.totalPage) {
+                        setFormErrors({ ...formErrors, totalPage: null })
+                      }
+                    }}
                     placeholder="예: 300"
                     min="1"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm ${
+                      formErrors.totalPage ? 'border-red-300' : 'border-gray-200'
+                    }`}
                   />
+                  {formErrors.totalPage && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.totalPage}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">메모 (선택)</label>
@@ -669,10 +717,10 @@ const MyLibraryPage = () => {
                   type="button"
                   onClick={() => {
                     setShowAddForm(false)
-                    setFormData({ 
-                      title: '', 
-                      author: '', 
-                      memo: '', 
+                    setFormData({
+                      title: '',
+                      author: '',
+                      memo: '',
                       totalPage: '',
                       isbn: '',
                       publisher: '',
@@ -700,47 +748,47 @@ const MyLibraryPage = () => {
         )}
 
         {/* Summary Statistics */}
-        <div className="mb-8">
+        <div className="mb-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-200">
-              <div className="text-3xl font-bold text-gray-900 mb-1">{totalBooks}</div>
-              <div className="text-gray-600">전체 도서</div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{totalBooks}</div>
+              <div className="text-gray-500 text-sm">전체 도서</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-200">
-              <div className="text-3xl font-bold text-gray-900 mb-1">{readingBooks.length}</div>
-              <div className="text-gray-600">읽는 중</div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{readingBooks.length}</div>
+              <div className="text-gray-500 text-sm">읽는 중</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-200">
-              <div className="text-3xl font-bold text-gray-900 mb-1">{completedBooks.length}</div>
-              <div className="text-gray-600">완독</div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <div className="text-3xl font-semibold text-gray-900 mb-1">{completedBooks.length}</div>
+              <div className="text-gray-500 text-sm">완독</div>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div 
+            <div
               onClick={() => navigate('/community', { state: { filterMyPosts: true } })}
-              className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-200 cursor-pointer hover:shadow-lg hover:border-brand-400 transition-all"
+              className="bg-white rounded-2xl p-6 border border-gray-100 cursor-pointer hover:border-gray-200 transition-all duration-200"
             >
-              <div className="text-4xl font-bold text-brand-600">{myPostingsCount}</div>
-              <div className="text-gray-600 text-lg">내 포스트</div>
+              <div className="text-4xl font-semibold text-gray-900">{myPostingsCount}</div>
+              <div className="text-gray-500 text-sm mt-1">내 포스트</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-200">
-              <div className="text-4xl font-bold text-brand-600">{formatTime(totalReadingTime)}</div>
-              <div className="text-gray-600 text-lg">총 독서 시간</div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <div className="text-4xl font-semibold text-gray-900">{formatTime(totalReadingTime)}</div>
+              <div className="text-gray-500 text-sm mt-1">총 독서 시간</div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-200">
-              <div className="text-4xl font-bold text-brand-600">{formatTime(todayReadingTime)}</div>
-              <div className="text-gray-600 text-lg">오늘 읽은 시간</div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <div className="text-4xl font-semibold text-gray-900">{formatTime(todayReadingTime)}</div>
+              <div className="text-gray-500 text-sm mt-1">오늘 읽은 시간</div>
             </div>
           </div>
         </div>
 
         {/* Completed Books Section */}
         {completedBooks.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">완독한 책</h2>
-                <p className="text-gray-600">완독한 책에 대한 포스팅을 작성해보세요</p>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2 tracking-tight">완독한 책</h2>
+                <p className="text-gray-500 text-[15px]">완독한 책에 대한 포스팅을 작성해보세요</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -748,34 +796,34 @@ const MyLibraryPage = () => {
                 <div
                   key={book.id}
                   onClick={() => handlePostingClick(book)}
-                  className="bg-white rounded-xl p-6 shadow-md border border-gray-100 cursor-pointer hover:shadow-lg hover:border-brand-300 transition-all transform hover:scale-105"
+                  className="bg-white rounded-2xl p-6 border border-gray-100 cursor-pointer hover:border-gray-200 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
                         {book.title}
                       </h3>
-                      <p className="text-sm text-gray-600 mb-2">{book.author}</p>
+                      <p className="text-sm text-gray-500 mb-2">{book.author}</p>
                     </div>
-                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold whitespace-nowrap">
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium whitespace-nowrap">
                       완독
                     </span>
                   </div>
                   {book.completedDate && (
-                    <div className="text-xs text-gray-500 mb-3">
+                    <div className="text-xs text-gray-400 mb-3">
                       완독일: {book.completedDate}
                     </div>
                   )}
                   {book.memo && (
-                    <p className="text-sm text-gray-600 italic line-clamp-2 mb-3">
+                    <p className="text-sm text-gray-500 italic line-clamp-2 mb-3">
                       "{book.memo}"
                     </p>
                   )}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-400">
                       독서 시간: {formatTime(book.totalReadingTime || 0)}
                     </span>
-                    <div className="flex items-center text-brand-600 text-sm font-semibold">
+                    <div className="flex items-center text-gray-900 text-sm font-medium">
                       포스팅 작성하기
                       <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -791,8 +839,8 @@ const MyLibraryPage = () => {
         {/* Book List */}
         <div className="space-y-4 mb-8">
           {books.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center shadow-md border border-gray-100">
-              <p className="text-gray-500 text-lg">아직 추가된 책이 없습니다.</p>
+            <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
+              <p className="text-gray-500 text-base">아직 추가된 책이 없습니다.</p>
               <p className="text-gray-400 text-sm mt-2">새 책을 추가해보세요!</p>
             </div>
           ) : (
@@ -807,9 +855,8 @@ const MyLibraryPage = () => {
               return (
                 <div
                   key={book.id}
-                  className={`bg-white rounded-xl p-6 shadow-md border border-gray-100 ${
-                    book.status === 'reading' ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''
-                  }`}
+                  className={`bg-white rounded-2xl p-6 border border-gray-100 ${book.status === 'reading' ? 'cursor-pointer hover:border-gray-200 transition-all duration-200' : ''
+                    }`}
                   onClick={() => {
                     if (book.status === 'reading' && !isReading) {
                       handleStartReading(book.id)
@@ -819,7 +866,7 @@ const MyLibraryPage = () => {
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Book Cover */}
                     <div className="flex-shrink-0">
-                      <div className="w-32 h-48 md:w-40 md:h-60 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
+                      <div className="w-32 h-48 md:w-40 md:h-60 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                         {book.thumbnail ? (
                           <img
                             src={book.thumbnail}
@@ -827,7 +874,7 @@ const MyLibraryPage = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
+                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
                             📚
                           </div>
                         )}
@@ -838,24 +885,23 @@ const MyLibraryPage = () => {
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-xl font-bold text-gray-900 pr-4">{book.title}</h3>
-                          <span className={`text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${
-                            book.status === 'completed'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
+                          <h3 className="text-xl font-semibold text-gray-900 pr-4">{book.title}</h3>
+                          <span className={`text-xs font-medium px-3 py-1 rounded-lg whitespace-nowrap ${book.status === 'completed'
+                              ? 'bg-gray-100 text-gray-700'
+                              : 'bg-gray-100 text-gray-700'
+                            }`}>
                             {book.status === 'completed' ? '완독' : '읽는 중'}
                           </span>
                         </div>
 
-                        <div className="space-y-1 text-sm text-gray-600 mb-4">
-                          <p><span className="font-medium">저자</span>: {book.author}</p>
+                        <div className="space-y-1 text-sm text-gray-500 mb-4">
+                          <p><span className="font-medium text-gray-700">저자</span>: {book.author}</p>
                           {book.publisher && (
-                            <p><span className="font-medium">출판사</span>: {book.publisher}</p>
+                            <p><span className="font-medium text-gray-700">출판사</span>: {book.publisher}</p>
                           )}
                           {book.publishDate && (
                             <p>
-                              <span className="font-medium">발행일</span>: {book.publishDate}
+                              <span className="font-medium text-gray-700">발행일</span>: {book.publishDate}
                               {book.isbn && ` | ISBN ${book.isbn}`}
                             </p>
                           )}
@@ -874,12 +920,12 @@ const MyLibraryPage = () => {
                                 e.stopPropagation()
                                 navigate(`/book/${book.id}`)
                               }}
-                              className="text-gray-900 font-medium hover:text-brand-600 transition-colors mb-2"
+                              className="text-gray-700 font-medium hover:text-gray-900 transition-colors mb-2 text-sm"
                             >
                               책 만나러 가기 →
                             </button>
                             {!isReading && (
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-400">
                                 카드를 클릭하면 독서를 시작할 수 있습니다
                               </p>
                             )}
@@ -894,13 +940,13 @@ const MyLibraryPage = () => {
                             <span className="text-sm text-gray-600">
                               진행률: {progressPercentage}%
                             </span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-400">
                               {book.readPage || 0} / {book.totalPage || 0} 페이지
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="w-full bg-gray-100 rounded-full h-2">
                             <div
-                              className="bg-green-500 h-2.5 rounded-full transition-all duration-300"
+                              className="bg-gray-900 h-2 rounded-full transition-all duration-300"
                               style={{ width: `${progressPercentage}%` }}
                             ></div>
                           </div>
@@ -909,10 +955,10 @@ const MyLibraryPage = () => {
                       {/* 독서 시간 표시 */}
                       {totalTime > 0 && (
                         <div className="mb-3">
-                          <p className="text-sm text-gray-600">
-                            총 독서시간: <span className="font-semibold text-brand-600">{formatTime(totalTime)}</span>
+                          <p className="text-sm text-gray-500">
+                            총 독서시간: <span className="font-semibold text-gray-900">{formatTime(totalTime)}</span>
                             {isReading && (
-                              <span className="ml-2 text-xs text-blue-600">
+                              <span className="ml-2 text-xs text-gray-400">
                                 (진행 중: {formatTime(currentSessionTime)})
                               </span>
                             )}
@@ -928,7 +974,7 @@ const MyLibraryPage = () => {
                               e.stopPropagation()
                               handleStopReading(book.id)
                             }}
-                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                            className="px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
                           >
                             읽기 종료
                           </button>
@@ -937,11 +983,11 @@ const MyLibraryPage = () => {
 
                       {/* Memo */}
                       {book.memo && (
-                        <p className="text-sm text-gray-600 mb-3 italic">"{book.memo}"</p>
+                        <p className="text-sm text-gray-500 mb-3 italic">"{book.memo}"</p>
                       )}
 
                       {/* Dates */}
-                      <div className="text-xs text-gray-500 space-y-1">
+                      <div className="text-xs text-gray-400 space-y-1">
                         <p>시작: {book.startDate}</p>
                         {book.completedDate && (
                           <p>완독: {book.completedDate}</p>

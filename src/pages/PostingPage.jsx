@@ -41,10 +41,10 @@ const PostingPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     try {
       const existingPostings = JSON.parse(localStorage.getItem('bookPostings') || '[]')
-      
+
       if (isEditing && editingPosting) {
         // 수정 모드: 기존 포스팅 업데이트
         const updatedPostings = existingPostings.map(p => {
@@ -61,10 +61,10 @@ const PostingPage = () => {
           return p
         })
         localStorage.setItem('bookPostings', JSON.stringify(updatedPostings))
-        
+
         // 완료 후 커뮤니티 페이지로 이동
-        navigate('/community', { 
-          state: { 
+        navigate('/community', {
+          state: {
             message: '포스팅이 수정되었습니다!',
             postingId: editingPosting.id,
             filterMyPosts: true
@@ -95,8 +95,8 @@ const PostingPage = () => {
         localStorage.setItem('bookPostings', JSON.stringify(existingPostings))
 
         // 완료 후 커뮤니티 페이지로 이동
-        navigate('/community', { 
-          state: { 
+        navigate('/community', {
+          state: {
             message: '포스팅이 작성되었습니다!',
             postingId: posting.id
           }
@@ -154,7 +154,7 @@ const PostingPage = () => {
           <div className="space-y-6">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 포스팅 제목 <span className="text-gray-400">(선택)</span>
               </label>
               <input
@@ -162,14 +162,14 @@ const PostingPage = () => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder={`${book.title} 독후감`}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm"
               />
-              <p className="text-xs text-gray-500 mt-1">제목을 입력하지 않으면 기본 제목이 사용됩니다.</p>
+              <p className="text-xs text-gray-400 mt-1">제목을 입력하지 않으면 기본 제목이 사용됩니다.</p>
             </div>
 
             {/* Rating */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 평점
               </label>
               <div className="flex items-center gap-2">
@@ -178,20 +178,19 @@ const PostingPage = () => {
                     key={star}
                     type="button"
                     onClick={() => setFormData({ ...formData, rating: star })}
-                    className={`text-3xl transition-transform hover:scale-110 ${
-                      star <= formData.rating ? 'text-yellow-400' : 'text-gray-300'
-                    }`}
+                    className={`text-3xl transition-transform hover:scale-110 ${star <= formData.rating ? 'text-yellow-400' : 'text-gray-200'
+                      }`}
                   >
                     ★
                   </button>
                 ))}
-                <span className="ml-2 text-gray-600 font-semibold">{formData.rating}점</span>
+                <span className="ml-2 text-gray-600 font-medium">{formData.rating}점</span>
               </div>
             </div>
 
             {/* Content */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 내용 <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -200,16 +199,16 @@ const PostingPage = () => {
                 placeholder="이 책을 읽고 느낀 점, 인상 깊었던 부분, 추천하는 이유 등을 자유롭게 작성해주세요..."
                 rows={12}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 resize-none text-sm"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 {formData.content.length}자
               </p>
             </div>
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 태그 <span className="text-gray-400">(선택)</span>
               </label>
               <input
@@ -217,9 +216,9 @@ const PostingPage = () => {
                 value={formData.tags}
                 onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                 placeholder="예: 소설, 추리, 감동 (쉼표로 구분)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm"
               />
-              <p className="text-xs text-gray-500 mt-1">태그를 쉼표로 구분하여 입력하세요.</p>
+              <p className="text-xs text-gray-400 mt-1">태그를 쉼표로 구분하여 입력하세요.</p>
             </div>
 
             {/* Submit Buttons */}
@@ -227,14 +226,14 @@ const PostingPage = () => {
               <button
                 type="button"
                 onClick={() => navigate('/mylibrary')}
-                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-semibold"
+                className="flex-1 px-6 py-3 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-all duration-200 font-medium text-sm"
               >
                 취소
               </button>
               <button
                 type="submit"
                 disabled={!formData.content.trim()}
-                className="flex-1 px-6 py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
               >
                 {isEditing ? '포스팅 수정하기' : '포스팅 작성하기'}
               </button>

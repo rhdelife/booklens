@@ -52,7 +52,7 @@ const GalleryPage = () => {
     const loadBooks = async () => {
       setIsLoading(true)
       setError(null)
-      
+
       try {
         // 민음사와 문학동네 출판사 책만 가져오기
         const publisherBooks = await getBooksByPublishers(['민음사', '문학동네'], 40)
@@ -114,30 +114,30 @@ const GalleryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Books Collection</h1>
-          <p className="text-gray-600">출판사의 모든 책 표지를 탐색하고 컬렉션을 완성해보세요</p>
+        <div className="mb-12">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-2 tracking-tight">Books Collection</h1>
+          <p className="text-gray-500 text-[15px]">출판사의 모든 책 표지를 탐색하고 컬렉션을 완성해보세요</p>
         </div>
 
         {/* Loading State */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-500 mb-4"></div>
-            <p className="text-gray-600">책 데이터를 불러오는 중...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900 mb-4"></div>
+            <p className="text-gray-500 text-sm">책 데이터를 불러오는 중...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && !isLoading && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8">
             <div className="flex items-center gap-3">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-red-800">{error}</p>
+              <p className="text-red-800 text-sm">{error}</p>
             </div>
           </div>
         )}
@@ -152,14 +152,14 @@ const GalleryPage = () => {
 
         {/* Filter Area (Optional) */}
         {!isLoading && !error && (
-          <div className="mb-8 bg-white rounded-xl p-6 shadow-md border border-gray-100">
+          <div className="mb-8 bg-white rounded-2xl p-6 border border-gray-100">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">장르</label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">장르</label>
                 <select
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm"
                 >
                   {genres.map(genre => (
                     <option key={genre} value={genre}>
@@ -169,11 +169,11 @@ const GalleryPage = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">시리즈</label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">시리즈</label>
                 <select
                   value={selectedSeries}
                   onChange={(e) => setSelectedSeries(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm"
                 >
                   {series.map(s => (
                     <option key={s} value={s}>
@@ -183,11 +183,11 @@ const GalleryPage = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">연도</label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">연도</label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm"
                 >
                   {years.map(year => (
                     <option key={year} value={year}>
@@ -203,9 +203,9 @@ const GalleryPage = () => {
         {/* Masonry Grid Section with Waterwheel Animation */}
         {!isLoading && !error && (
           <div className="relative overflow-hidden" style={{ height: '100vh', maxHeight: '900px' }}>
-          {/* Extended gradient mask to fade books into footer - longer fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-80 bg-gradient-to-t from-gray-900 via-gray-900/95 via-gray-900/70 to-transparent pointer-events-none z-10"></div>
-          <style>{`
+            {/* Extended gradient mask to fade books into footer - longer fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-80 bg-gradient-to-t from-gray-900 via-gray-900/95 via-gray-900/70 to-transparent pointer-events-none z-10"></div>
+            <style>{`
             @keyframes scrollDown {
               0% {
                 transform: translateY(-50%);
@@ -277,37 +277,37 @@ const GalleryPage = () => {
               animation-delay: -10s;
             }
           `}</style>
-          {filteredBooks.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">
-              <p className="text-xl">표시할 책이 없습니다.</p>
-              <p className="text-sm mt-2">필터를 조정해보세요.</p>
-            </div>
-          ) : (
-            <Masonry
-              breakpointCols={breakpointColumnsObj}
-              className="my-masonry-grid"
-              columnClassName="my-masonry-grid_column waterwheel-column"
-            >
-              {/* 책 목록을 2번 반복하여 무한 스크롤 효과 생성 (길이 줄임) */}
-              {[...filteredBooks, ...filteredBooks].map((book, index) => (
-                <div key={`${book.id}-${index}`}>
-                  <GalleryBookCard book={book} />
-                </div>
-              ))}
-            </Masonry>
-          )}
-        </div>
+            {filteredBooks.length === 0 ? (
+              <div className="text-center py-20 text-gray-500">
+                <p className="text-xl">표시할 책이 없습니다.</p>
+                <p className="text-sm mt-2">필터를 조정해보세요.</p>
+              </div>
+            ) : (
+              <Masonry
+                breakpointCols={breakpointColumnsObj}
+                className="my-masonry-grid"
+                columnClassName="my-masonry-grid_column waterwheel-column"
+              >
+                {/* 책 목록을 2번 반복하여 무한 스크롤 효과 생성 (길이 줄임) */}
+                {[...filteredBooks, ...filteredBooks].map((book, index) => (
+                  <div key={`${book.id}-${index}`}>
+                    <GalleryBookCard book={book} />
+                  </div>
+                ))}
+              </Masonry>
+            )}
+          </div>
         )}
 
         {/* Footer - positioned to overlay content */}
-        <footer className="bg-gray-700 text-white relative z-20 -mt-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <footer className="bg-gray-900 text-white relative z-20 -mt-40">
+          <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
               <div>
                 <div className="mb-4 h-8 flex items-center">
                   <TextPressure
                     text="BOOKLENS"
-                    textColor="#22c55e"
+                    textColor="#FFFFFF"
                     width={true}
                     weight={true}
                     italic={true}
@@ -315,36 +315,36 @@ const GalleryPage = () => {
                     minFontSize={16}
                   />
                 </div>
-                <p className="text-gray-400">
+                <p className="text-gray-400 text-sm">
                   당신의 독서 여정을 함께합니다
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">서비스</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white">도서 목록</a></li>
-                  <li><a href="#" className="hover:text-white">베스트셀러</a></li>
-                  <li><a href="#" className="hover:text-white">신간 도서</a></li>
+                <h4 className="font-medium text-white mb-4 text-sm">서비스</h4>
+                <ul className="space-y-2 text-gray-400 text-sm">
+                  <li><a href="#" className="hover:text-white transition-colors">도서 목록</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">베스트셀러</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">신간 도서</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">회사</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white">소개</a></li>
-                  <li><a href="#" className="hover:text-white">이용약관</a></li>
-                  <li><a href="#" className="hover:text-white">개인정보처리방침</a></li>
+                <h4 className="font-medium text-white mb-4 text-sm">회사</h4>
+                <ul className="space-y-2 text-gray-400 text-sm">
+                  <li><a href="#" className="hover:text-white transition-colors">소개</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">이용약관</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">개인정보처리방침</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">고객지원</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white">문의하기</a></li>
-                  <li><a href="#" className="hover:text-white">자주 묻는 질문</a></li>
-                  <li><a href="#" className="hover:text-white">공지사항</a></li>
+                <h4 className="font-medium text-white mb-4 text-sm">고객지원</h4>
+                <ul className="space-y-2 text-gray-400 text-sm">
+                  <li><a href="#" className="hover:text-white transition-colors">문의하기</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">자주 묻는 질문</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">공지사항</a></li>
                 </ul>
               </div>
             </div>
-            <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400 text-sm">
               <p>&copy; 2024 BookLens. All rights reserved.</p>
             </div>
           </div>
