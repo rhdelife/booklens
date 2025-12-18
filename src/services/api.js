@@ -41,8 +41,8 @@ const apiRequest = async (endpoint, options = {}) => {
     const data = isJson ? await response.json() : await response.text()
 
     if (!response.ok) {
-      // 에러 응답 처리
-      const errorMessage = data.message || data.error || `HTTP error! status: ${response.status}`
+      // 에러 응답 처리 (백엔드가 { error: string } 형식 사용)
+      const errorMessage = data.error || data.message || `HTTP error! status: ${response.status}`
       console.error('API Error Response:', {
         url,
         status: response.status,

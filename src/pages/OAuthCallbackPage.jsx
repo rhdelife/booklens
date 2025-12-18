@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { handleGoogleCallback, handleNaverCallback } from '../services/oauth'
+import { authAPI } from '../services/api'
 
 const OAuthCallbackPage = () => {
   const [searchParams] = useSearchParams()
@@ -13,40 +13,73 @@ const OAuthCallbackPage = () => {
   useEffect(() => {
     const processCallback = async () => {
       try {
-        const code = searchParams.get('code')
-        const state = searchParams.get('state')
+        // 백엔드에서 OAuth 콜백을 처리한 후 프론트엔드로 리다이렉트
+        // 백엔드는 URL 파라미터로 토큰이나 에러를 전달할 수 있음
+
+        const token = searchParams.get('token')
+        const userParam = searchParams.get('user')
         const errorParam = searchParams.get('error')
+        const errorMessage = searchParams.get('message')
 
-        // OAuth 에러 처리
-        if (errorParam) {
-          throw new Error('OAuth 인증이 취소되었습니다.')
+        // 에러 처리
+        if (errorParam || errorMessage) {
+          throw new Error(errorMessage || 'OAuth 인증에 실패했습니다.')
         }
 
-        if (!code || !state) {
-          throw new Error('OAuth 인증 정보가 없습니다.')
+        // 토큰이 있으면 사용자 정보 처리
+        if (token) {
+          // 토큰을 세션에 저장
+          sessionStorage.setItem('token', token)
+
+          // 백엔드에서 user 파라미터로 전달된 사용자 정보가 있으면 사용
+          if (userParam) {
+            try {
+              const userData = JSON.parse(decodeURIComponent(userParam))
+              await setOAuthUser(userData, token)
+              navigate('/', { replace: true })
+              return
+            } catch (err) {
+              console.error('Failed to parse user data:', err)
+              // 파싱 실패 시 백엔드에서 사용자 정보 가져오기
+            }
+          }
+
+          // user 파라미터가 없거나 파싱 실패 시 백엔드에서 사용자 정보 가져오기
+          try {
+            const currentUser = await authAPI.getCurrentUser()
+            if (currentUser && currentUser.user) {
+              await setOAuthUser(currentUser.user, token)
+              navigate('/', { replace: true })
+              return
+            }
+          } catch (err) {
+            console.error('Failed to get user info:', err)
+            throw new Error('사용자 정보를 가져올 수 없습니다.')
+          }
         }
 
-        // 현재 경로에서 provider 확인
-        const pathname = window.location.pathname
-        let userData
-
-        if (pathname.includes('/google')) {
-          userData = await handleGoogleCallback(code, state)
-        } else if (pathname.includes('/naver')) {
-          userData = await handleNaverCallback(code, state)
-        } else {
-          throw new Error('알 수 없는 OAuth 제공자입니다.')
+        // 토큰이 없으면 백엔드에서 처리 중이거나 에러 발생
+        // 백엔드가 세션 쿠키를 사용하는 경우, 사용자 정보를 다시 가져오기 시도
+        try {
+          const currentUser = await authAPI.getCurrentUser()
+          if (currentUser && currentUser.user) {
+            await setOAuthUser(currentUser.user, currentUser.token || sessionStorage.getItem('token'))
+            navigate('/', { replace: true })
+            return
+          }
+        } catch (err) {
+          console.error('Failed to get user info:', err)
         }
 
-        // 사용자 정보 저장 및 리다이렉트
-        if (userData && userData.user) {
-          await setOAuthUser(userData.user, userData.token)
-          navigate('/', { replace: true })
-        } else {
-          throw new Error('사용자 정보를 가져올 수 없습니다.')
-        }
+        // 토큰도 없고 사용자 정보도 가져올 수 없으면 에러
+        throw new Error('OAuth 인증 정보를 받을 수 없습니다.')
       } catch (err) {
-        console.error('OAuth callback error:', err)
+        console.error('OAuth callback error:', {
+          error: err.message,
+          stack: err.stack,
+          searchParams: Object.fromEntries(searchParams),
+        })
+
         setError(err.message || 'OAuth 인증에 실패했습니다.')
         setLoading(false)
         // 3초 후 로그인 페이지로 리다이렉트

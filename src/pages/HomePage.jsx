@@ -1,13 +1,45 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import TextPressure from '../components/TextPressure'
 import { getBestsellers, getNewReleases } from '../lib/googleBooksApi'
+import { useAuth } from '../contexts/AuthContext'
+import { authAPI } from '../services/api'
 
 const HomePage = () => {
   const [currentBanner, setCurrentBanner] = useState(0)
   const [bestsellers, setBestsellers] = useState([])
   const [newReleases, setNewReleases] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { setOAuthUser, isAuthenticated } = useAuth()
+
+  // OAuth 콜백 처리 (백엔드가 홈 페이지로 리다이렉트한 경우)
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const error = searchParams.get('error')
+
+    if (token && !isAuthenticated) {
+      const handleOAuthCallback = async () => {
+        try {
+          sessionStorage.setItem('token', token)
+          const currentUser = await authAPI.getCurrentUser()
+          if (currentUser && currentUser.user) {
+            await setOAuthUser(currentUser.user, token)
+            // URL에서 토큰 파라미터 제거
+            setSearchParams({})
+          }
+        } catch (err) {
+          console.error('OAuth callback error:', err)
+          setSearchParams({ error: '인증 실패' })
+        }
+      }
+      handleOAuthCallback()
+    } else if (error) {
+      console.error('OAuth error:', error)
+      setSearchParams({})
+    }
+  }, [searchParams, setSearchParams, setOAuthUser, isAuthenticated])
 
   useEffect(() => {
     const loadBooks = async () => {

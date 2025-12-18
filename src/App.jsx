@@ -29,8 +29,9 @@ function App() {
             <Route path="/book/:id" element={<BookDetailPage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/community" element={<CommunityPage />} />
-            
-            {/* OAuth Callback Routes */}
+
+            {/* OAuth Callback Routes - 백엔드에서 리다이렉트하는 경로 */}
+            <Route path="/auth/callback" element={<OAuthCallbackPage />} />
             <Route path="/auth/google/callback" element={<OAuthCallbackPage />} />
             <Route path="/auth/naver/callback" element={<OAuthCallbackPage />} />
 
