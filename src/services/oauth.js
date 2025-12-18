@@ -11,6 +11,16 @@ import { API_BASE_URL } from '../utils/apiConfig'
  */
 export const startGoogleLogin = () => {
   try {
+    if (!API_BASE_URL) {
+      const errorMessage =
+        '백엔드 API URL이 설정되지 않았습니다.\n\n' +
+        'Render 환경 변수에 VITE_API_BASE_URL을 설정해주세요.\n' +
+        '예: https://booklens2-backend.onrender.com/api'
+      alert(errorMessage)
+      console.error(errorMessage)
+      return
+    }
+
     // 백엔드에서 OAuth URL을 생성하고 리다이렉트 처리
     // 백엔드는 OAuth 제공자로 리다이렉트하고, 콜백도 백엔드에서 처리
     window.location.href = `${API_BASE_URL}/auth/google`
@@ -26,6 +36,16 @@ export const startGoogleLogin = () => {
  */
 export const startNaverLogin = () => {
   try {
+    if (!API_BASE_URL) {
+      const errorMessage =
+        '백엔드 API URL이 설정되지 않았습니다.\n\n' +
+        'Render 환경 변수에 VITE_API_BASE_URL을 설정해주세요.\n' +
+        '예: https://booklens2-backend.onrender.com/api'
+      alert(errorMessage)
+      console.error(errorMessage)
+      return
+    }
+
     // 백엔드에서 OAuth URL을 생성하고 리다이렉트 처리
     // 백엔드는 OAuth 제공자로 리다이렉트하고, 콜백도 백엔드에서 처리
     window.location.href = `${API_BASE_URL}/auth/naver`

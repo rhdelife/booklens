@@ -9,6 +9,16 @@ import { API_BASE_URL } from '../utils/apiConfig'
  * API 요청 헬퍼 함수
  */
 const apiRequest = async (endpoint, options = {}) => {
+  // API_BASE_URL이 설정되지 않았으면 명확한 에러
+  if (!API_BASE_URL) {
+    const errorMessage =
+      '백엔드 API URL이 설정되지 않았습니다.\n\n' +
+      'Render 환경 변수에 VITE_API_BASE_URL을 설정해주세요.\n' +
+      '예: https://booklens2-backend.onrender.com/api'
+    console.error(errorMessage)
+    throw new Error('백엔드 서버 URL이 설정되지 않았습니다. 환경 변수 VITE_API_BASE_URL을 확인해주세요.')
+  }
+
   const url = `${API_BASE_URL}${endpoint}`
 
   // 세션에서 토큰 가져오기

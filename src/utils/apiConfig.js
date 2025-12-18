@@ -11,15 +11,15 @@ export const getApiBaseUrl = () => {
 
   // 프로덕션 환경에서는 환경 변수 필수
   if (import.meta.env.PROD) {
-    const errorMessage = 
+    const errorMessage =
       '❌ VITE_API_BASE_URL 환경 변수가 설정되지 않았습니다!\n\n' +
       '프로덕션 환경에서는 백엔드 API URL을 환경 변수로 설정해야 합니다.\n' +
       'Render 환경 변수에 VITE_API_BASE_URL을 추가해주세요.\n\n' +
       '예: https://booklens2-backend.onrender.com/api'
-    
+
     // 콘솔에 명확한 에러 표시
     console.error(errorMessage)
-    
+
     // 빈 문자열 반환 (API 요청 시 명확한 에러 메시지 표시)
     // 앱은 시작되지만 API 요청은 실패하고 명확한 에러 메시지 표시
     return ''
@@ -34,7 +34,7 @@ let _apiBaseUrl = null
 export const API_BASE_URL = (() => {
   if (_apiBaseUrl === null) {
     _apiBaseUrl = getApiBaseUrl()
-    
+
     // 프로덕션에서 환경 변수가 없으면 경고
     if (import.meta.env.PROD && !_apiBaseUrl) {
       console.error(
