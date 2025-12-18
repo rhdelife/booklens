@@ -1,9 +1,9 @@
 /**
  * 백엔드 API 연동을 위한 서비스 레이어
- * 환경 변수에서 API URL을 가져오거나 기본값 사용
+ * 환경 변수에서 API URL을 가져오거나 동적으로 결정
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 /**
  * API 요청 헬퍼 함수

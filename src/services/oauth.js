@@ -3,7 +3,7 @@
  * 백엔드에서 OAuth 플로우를 처리하므로 프론트엔드는 백엔드 엔드포인트로만 리다이렉트
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 /**
  * OAuth 로그인 시작 (구글)
